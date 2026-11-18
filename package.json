@@ -1,0 +1,11 @@
+{
+  "name": "cerebro-meta",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Painel CÉREBRO META e receptor de alertas TradingView",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "check": "node --check server/server.js"
+  }
+}
