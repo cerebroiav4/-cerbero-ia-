@@ -1,0 +1,61 @@
+//@version=6
+indicator("CÉREBRO 🧠 META — Confluência TradingView", overlay=true, max_labels_count=500)
+groupTrend = "Tendência e médias"
+emaFastLen = input.int(9, "EMA rápida", minval=1, group=groupTrend)
+emaSlowLen = input.int(21, "EMA intermediária", minval=1, group=groupTrend)
+emaTrendLen = input.int(200, "EMA tendência", minval=1, group=groupTrend)
+groupFilters = "Filtros"
+rsiLen = input.int(14, "RSI período", minval=2, group=groupFilters)
+rsiBuyMin = input.float(50, "RSI mínimo CALL", minval=0, maxval=100, group=groupFilters)
+rsiBuyMax = input.float(70, "RSI máximo CALL", minval=0, maxval=100, group=groupFilters)
+rsiSellMax = input.float(50, "RSI máximo PUT", minval=0, maxval=100, group=groupFilters)
+rsiSellMin = input.float(30, "RSI mínimo PUT", minval=0, maxval=100, group=groupFilters)
+adxLen = input.int(14, "ADX período", minval=2, group=groupFilters)
+adxMin = input.float(18, "ADX mínimo", minval=1, group=groupFilters)
+useMtf = input.bool(true, "Exigir confirmação M1 + M5", group=groupFilters)
+groupAlerts = "Alertas"
+enableCalls = input.bool(true, "Habilitar CALL", group=groupAlerts)
+enablePuts = input.bool(true, "Habilitar PUT", group=groupAlerts)
+sendJson = input.bool(true, "Enviar JSON via alert()", group=groupAlerts)
+webhookSecret = input.string("", "Token WEBHOOK_SECRET", group=groupAlerts)
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+emaTrend = ta.ema(close, emaTrendLen)
+rsiValue = ta.rsi(close, rsiLen)
+[macdLine, macdSignal, _] = ta.macd(close, 12, 26, 9)
+[plusDI, minusDI, adxValue] = ta.dmi(adxLen, adxLen)
+atrValue = ta.atr(14)
+m1Bull = request.security(syminfo.tickerid, "1", ta.ema(close, emaFastLen)[1] > ta.ema(close, emaSlowLen)[1] and ta.ema(close, emaSlowLen)[1] > ta.ema(close, emaTrendLen)[1], lookahead=barmerge.lookahead_on)
+m1Bear = request.security(syminfo.tickerid, "1", ta.ema(close, emaFastLen)[1] < ta.ema(close, emaSlowLen)[1] and ta.ema(close, emaSlowLen)[1] < ta.ema(close, emaTrendLen)[1], lookahead=barmerge.lookahead_on)
+m5Bull = request.security(syminfo.tickerid, "5", ta.ema(close, emaFastLen)[1] > ta.ema(close, emaSlowLen)[1] and ta.ema(close, emaSlowLen)[1] > ta.ema(close, emaTrendLen)[1], lookahead=barmerge.lookahead_on)
+m5Bear = request.security(syminfo.tickerid, "5", ta.ema(close, emaFastLen)[1] < ta.ema(close, emaSlowLen)[1] and ta.ema(close, emaTrendLen)[1] > ta.ema(close, emaSlowLen)[1], lookahead=barmerge.lookahead_on)
+chartBull = emaFast > emaSlow and emaSlow > emaTrend and close > emaFast
+chartBear = emaFast < emaSlow and emaSlow < emaTrend and close < emaFast
+momentumBull = rsiValue >= rsiBuyMin and rsiValue <= rsiBuyMax and macdLine > macdSignal and plusDI > minusDI
+momentumBear = rsiValue <= rsiSellMax and rsiValue >= rsiSellMin and macdLine < macdSignal and minusDI > plusDI
+mtfBullOK = not useMtf or (m1Bull and m5Bull)
+mtfBearOK = not useMtf or (m1Bear and m5Bear)
+callSignal = enableCalls and barstate.isconfirmed and chartBull and momentumBull and adxValue >= adxMin and mtfBullOK
+putSignal = enablePuts and barstate.isconfirmed and chartBear and momentumBear and adxValue >= adxMin and mtfBearOK
+plot(emaFast, "EMA 9", color=color.aqua)
+plot(emaSlow, "EMA 21", color=color.orange)
+plot(emaTrend, "EMA 200", color=color.blue, linewidth=2)
+plotshape(callSignal, title="CALL", text="CALL", style=shape.labelup, location=location.belowbar, color=color.lime, textcolor=color.black)
+plotshape(putSignal, title="PUT", text="PUT", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white)
+alertcondition(callSignal, title="CÉREBRO META — CALL", message="CEREBRO_META_CALL | {{ticker}} | {{interval}} | {{close}}")
+alertcondition(putSignal, title="CÉREBRO META — PUT", message="CEREBRO_META_PUT | {{ticker}} | {{interval}} | {{close}}")
+if sendJson and callSignal
+    alert('{"secret":"' + webhookSecret + '","signal":"CALL","symbol":"' + syminfo.tickerid + '","timeframe":"' + timeframe.period + '","close":"' + str.tostring(close) + '","rsi":"' + str.tostring(rsiValue) + '","adx":"' + str.tostring(adxValue) + '","bar_time":"' + str.tostring(time) + '"}', alert.freq_once_per_bar_close)
+if sendJson and putSignal
+    alert('{"secret":"' + webhookSecret + '","signal":"PUT","symbol":"' + syminfo.tickerid + '","timeframe":"' + timeframe.period + '","close":"' + str.tostring(close) + '","rsi":"' + str.tostring(rsiValue) + '","adx":"' + str.tostring(adxValue) + '","bar_time":"' + str.tostring(time) + '"}', alert.freq_once_per_bar_close)
+var table dash = table.new(position.top_right, 2, 4, border_width=1)
+if barstate.islast
+    table.cell(dash, 0, 0, "CÉREBRO META", bgcolor=color.rgb(13,35,55), text_color=color.white)
+    table.cell(dash, 1, 0, "STATUS", bgcolor=color.rgb(13,35,55), text_color=color.white)
+    table.cell(dash, 0, 1, "RSI")
+    table.cell(dash, 1, 1, str.tostring(rsiValue, "#.0"))
+    table.cell(dash, 0, 2, "ADX")
+    table.cell(dash, 1, 2, str.tostring(adxValue, "#.0"))
+    table.cell(dash, 0, 3, "SINAL")
+    table.cell(dash, 1, 3, callSignal ? "CALL" : putSignal ? "PUT" : "AGUARDAR")
+plot(atrValue, "ATR 14", display=display.data_window)
