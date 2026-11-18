@@ -5,7 +5,7 @@ function calculateRisk(){
  const valid=[balance,pct,stop,pip].every(Number.isFinite)&&balance>0&&pct>0&&pct<=5&&stop>0&&pip>0;
  if(!valid){$("risk-money").textContent="Confira os valores";$("lot-size").textContent="—";return;}
  const money=balance*pct/100, lots=money/(stop*pip);
- $("risk-money").textContent=money.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+ $("risk-money").textContent=money.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" (moeda da conta)";
  $("lot-size").textContent=lots.toFixed(3)+" lotes";
 }
 ["balance","risk-percent","stop-pips","pip-value"].forEach(id=>$(id).addEventListener("input",calculateRisk));
