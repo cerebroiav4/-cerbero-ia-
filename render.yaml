@@ -2,14 +2,10 @@ services:
   - type: web
     name: cerebro-meta
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
-    disk:
-      name: cerebro-meta-data
-      mountPath: /opt/render/project/src/server/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
