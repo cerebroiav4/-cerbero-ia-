@@ -35,6 +35,15 @@ function history(limit = 50) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   if (req.method === "GET" && url.pathname === "/api/health") return reply(res, 200, { ok: true, service: "cerebro-meta", webhookConfigured: Boolean(SECRET) });
+  if (req.method === "GET" && url.pathname === "/api/metrics") {
+    const rows = history(200);
+    const calls = rows.filter(x => x.signal === "CALL").length;
+    const puts = rows.filter(x => x.signal === "PUT").length;
+    return reply(res, 200, { total: rows.length, calls, puts,
+      callShare: rows.length ? Number((calls / rows.length * 100).toFixed(1)) : null,
+      putShare: rows.length ? Number((puts / rows.length * 100).toFixed(1)) : null,
+      note: "Distribuição dos alertas recebidos; não representa taxa de acerto nem rentabilidade." });
+  }
   if (req.method === "GET" && url.pathname === "/api/signals") {
     const n = Math.max(1, Math.min(200, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
     return reply(res, 200, { signals: history(n) });
