@@ -1,37 +1,16 @@
-# CÉREBRO META 1.5
+# CÉREBRO META FOREX 2.0
+Painel Node.js para análise técnica de Forex com dados da Twelve Data.
 
-Painel web independente para visualizar alertas técnicos enviados pelo TradingView.
+## Configuração
+1. Defina a variável de ambiente TWELVE_DATA_API_KEY no Render.
+2. O serviço usa Node.js e inicia com npm start.
+3. Health check: /api/health
+4. Análise: /api/analyze?symbol=EUR/USD&newsClear=true
 
-## Requisitos
-- Node.js 20 ou superior
-- Conta TradingView com alertas/webhooks habilitados
-- Hospedagem Node.js com armazenamento persistente para o histórico
-
-## Executar localmente
-```bash
-npm start
-```
-Defina antes a variável `WEBHOOK_SECRET` com um token aleatório forte. O painel abre em `http://localhost:3000`.
-
-## Rotas
-- `GET /api/health`: saúde do serviço
-- `GET /api/signals?limit=50`: histórico
-- `GET /api/metrics`: distribuição dos alertas CALL/PUT (não é taxa de acerto)
-- `POST /webhook/tradingview`: recebe sinais autenticados
-
-## TradingView
-1. Abra `cerebro_meta_tradingview.pine` no Pine Editor e adicione ao gráfico.
-2. Informe no indicador o mesmo token configurado em `WEBHOOK_SECRET`.
-3. Crie alerta com condição **Any alert() function call**.
-4. URL do webhook: `https://SEU-DOMINIO/webhook/tradingview`.
-
-Nunca publique o token em repositório público nem o envie em mensagens.
-
-## Limites atuais
-Esta versão é um receptor e painel de alertas técnicos. Ainda não integra calendário/notícias econômicas, COT/CFTC, sazonalidade, cotações de terceiros, IQ Option ou execução automática de ordens. O indicador exige confirmação de tendência M1/M5 quando habilitada e confirma os sinais no fechamento do candle do gráfico. Não promete taxa de acerto.
-
-## Gestão de risco manual
-O painel inclui uma calculadora de volume estimado a partir do saldo, percentual de risco, stop em pips e valor do pip por lote. O usuário deve informar o valor correto para o par e a moeda da conta. A calculadora não envia ordens e não substitui as especificações do contrato da corretora.
-
-## Dados externos
-Cotações e calendário econômico ainda não estão conectados. O painel não simula esses dados; a integração depende da escolha e configuração de provedores e respectivas credenciais.
+## Sinais e limites
+- Usa candles M1 e M5 fornecidos pela Twelve Data, EMA 20/50 e RSI 14.
+- CALL/PUT só quando M1 e M5 estão alinhados e o usuário confirma manualmente que não há notícia de alto impacto.
+- Caso contrário, SEM ENTRADA.
+- O painel agenda aviso no marco de 50 segundos antes da próxima virada de minuto. O alerta não garante que o fornecedor atualize dados em tempo real.
+- Sem integração com corretora ou execução automática. Sem promessa de taxa de acerto.
+- A disponibilidade e limites dependem do plano Twelve Data. Nunca coloque a chave no código ou no GitHub.
